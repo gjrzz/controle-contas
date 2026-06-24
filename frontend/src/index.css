@@ -1,0 +1,189 @@
+@import "tailwindcss";
+
+/* ===== GRAPHIE FONT FAMILY ===== */
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-ThinItalic.otf') format('opentype');
+  font-weight: 100;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-ExtraLight.otf') format('opentype');
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-ExtraLightItalic.otf') format('opentype');
+  font-weight: 200;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-LightItalic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-Book.otf') format('opentype');
+  font-weight: 450;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-BookItalic.otf') format('opentype');
+  font-weight: 450;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-SemiBoldItalic.otf') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-ExtraBold.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Graphie';
+  src: url('./fonts/Graphie/Dharma Type - Graphie-ExtraBoldItalic.otf') format('opentype');
+  font-weight: 800;
+  font-style: italic;
+}
+
+/* ===== TERMINA FONT FAMILY ===== */
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-ExtraLight.otf') format('opentype');
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-Demi.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-Heavy.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Termina';
+  src: url('./fonts/Termina/Termina-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+/* ===== CSS VARIABLES ===== */
+:root {
+  --color-primary: #57489c;
+  --color-primary-hover: rgba(87, 72, 156, 0.85);
+  --color-dark: #242424;
+  --color-card: rgba(255, 255, 255, 0.90);
+  --color-text: #000000;
+  --color-bg: transparent;
+  --font-body: 'Graphie', system-ui, sans-serif;
+  --font-heading: 'Termina', system-ui, sans-serif;
+}
+
+/* ===== BASE STYLES ===== */
+body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background-image: url('./background/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== TAILWIND THEME OVERRIDES ===== */
+@theme {
+  --color-primary: #57489c;
+  --color-primary-hover: rgba(87, 72, 156, 0.85);
+  --color-dark: #242424;
+  --color-card: rgba(255, 255, 255, 0.90);
+}
