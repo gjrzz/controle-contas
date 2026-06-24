@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERADOR
+  APROVADOR
+  FINANCEIRO
+}
+
+enum CompanyStatus {
+  ATIVA
+  INATIVA
+}
+
+enum ContractStatus {
+  ATIVO
+  ENCERRADO
+  SUSPENSO
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(OPERADOR)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model ServiceType {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  companies Company[]
+  contracts Contract[]
+  invoices  Invoice[]
+
+  @@map("service_types")
+}
+
+model Company {
+  id            String        @id @default(uuid())
+  name          String
+  cnpj          String        @unique
+  serviceTypeId String        @map("service_type_id")
+  email         String
+  phone         String
+  status        CompanyStatus @default(ATIVA)
+
+  // Endereço
+  cep         String
+  street      String
+  number      String
+  complement  String?
+  neighborhood String
+  city        String
+  state       String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id])
+  contracts   Contract[]
+  invoices    Invoice[]
+
+  @@map("companies")
+}
+
+model Contract {
+  id              String         @id @default(uuid())
+  companyId       String         @map("company_id")
+  serviceTypeId   String         @map("service_type_id")
+  contractNumber  String         @unique @map("contract_number")
+  monthlyValue    Decimal        @map("monthly_value") @db.Decimal(12, 2)
+  startDate       DateTime       @map("start_date") @db.Date
+  endDate         DateTime       @map("end_date") @db.Date
+  invoiceDueDay   Int            @map("invoice_due_day")
+  serviceCity     String         @map("service_city")
+  serviceState    String         @map("service_state")
+  description     String?
+  filePath        String?        @map("file_path")
+  status          ContractStatus @default(ATIVO)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company     Company     @relation(fields: [companyId], references: [id])
+  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id])
+  invoices    Invoice[]
+
+  @@map("contracts")
+}
+
+enum InvoiceStatus {
+  PENDENTE
+  EM_ANALISE
+  APROVADA
+  REJEITADA
+  LIBERADA_FINANCEIRO
+  PAGA
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  companyId       String        @map("company_id")
+  contractId      String        @map("contract_id")
+  serviceTypeId   String        @map("service_type_id")
+  invoiceNumber   String        @map("invoice_number")
+  issueDate       DateTime      @map("issue_date") @db.Date
+  dueDate         DateTime      @map("due_date") @db.Date
+  competenceMonth Int           @map("competence_month")
+  competenceYear  Int           @map("competence_year")
+  serviceCity     String        @map("service_city")
+  serviceState    String        @map("service_state")
+  description     String?
+  totalValue      Decimal       @map("total_value") @db.Decimal(12, 2)
+  filePath        String?       @map("file_path")
+  status          InvoiceStatus @default(PENDENTE)
+  justification   String?
+  rejectionReason String?       @map("rejection_reason")
+  paymentDate     DateTime?     @map("payment_date") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company     Company        @relation(fields: [companyId], references: [id])
+  contract    Contract       @relation(fields: [contractId], references: [id])
+  serviceType ServiceType    @relation(fields: [serviceTypeId], references: [id])
+  items       InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String  @map("invoice_id")
+  description String
+  unitValue   Decimal @map("unit_value") @db.Decimal(12, 2)
+  quantity    Decimal @db.Decimal(10, 4)
+  totalValue  Decimal @map("total_value") @db.Decimal(12, 2)
+  serviceCity String? @map("service_city")
+  serviceState String? @map("service_state")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
