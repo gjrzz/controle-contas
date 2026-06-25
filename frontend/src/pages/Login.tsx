@@ -84,9 +84,7 @@ export function Login() {
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-400 text-center">
-              Usuários de teste: admin@empresa.com / operador@empresa.com / aprovador@empresa.com / financeiro@empresa.com
-              <br />
-              Senha: 123456
+              Sistema de uso interno — Monte Bravo Investimentos
             </p>
           </div>
         </div>
