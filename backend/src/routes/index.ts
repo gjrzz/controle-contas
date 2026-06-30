@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { apiLimiter } from '../middlewares/rateLimiter';
 import authRoutes from './auth.routes';
 import userRoutes from './user.routes';
 import companyRoutes from './company.routes';
@@ -9,6 +10,9 @@ import calendarRoutes from './calendar.routes';
 import dashboardRoutes from './dashboard.routes';
 
 const router = Router();
+
+// Rate limit geral: 100 req/min por IP
+router.use(apiLimiter);
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);

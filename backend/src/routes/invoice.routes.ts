@@ -7,6 +7,7 @@ import { InvoiceService } from '../services/invoice.service';
 import { AuditService } from '../services/audit.service';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { upload, uploadsPath } from '../config/upload';
+import { validatePdfFiles } from '../middlewares/fileValidator';
 import { InvoiceStatus } from '@prisma/client';
 
 const router = Router();
@@ -189,7 +190,7 @@ router.get('/:id/download-zip', async (req: Request, res: Response) => {
 });
 
 // Cadastro — ADMIN e OPERADOR
-router.post('/', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), async (req: Request, res: Response) => {
+router.post('/', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), validatePdfFiles, async (req: Request, res: Response) => {
   try {
     const data = createInvoiceSchema.parse(req.body);
     const files = (req.files as Express.Multer.File[] | undefined)?.map(f => f.filename) || [];
@@ -255,7 +256,7 @@ router.post('/', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), asyn
 });
 
 // Edição — somente se PENDENTE, ADMIN e OPERADOR
-router.put('/:id', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), async (req: Request, res: Response) => {
+router.put('/:id', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), validatePdfFiles, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const existing = await invoiceService.findById(id);
