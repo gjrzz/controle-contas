@@ -134,12 +134,14 @@ export class CalendarService {
     });
 
     for (const contract of activeContracts) {
-      // Verifica se existe fatura para este contrato nesta competência
+      // Verifica se existe fatura para este contrato nesta competência OU com vencimento neste mês
       const existingInvoice = await prisma.invoice.findFirst({
         where: {
           contractId: contract.id,
-          competenceMonth: month,
-          competenceYear: year,
+          OR: [
+            { competenceMonth: month, competenceYear: year },
+            { dueDate: { gte: startDate, lte: endDate } },
+          ],
         },
       });
 
@@ -171,16 +173,19 @@ export class CalendarService {
     const endDate = new Date(year, month, 0);
     const now = new Date();
 
+    // Busca faturas que tenham competência OU vencimento neste mês
     const invoiceWhere: any = {
-      competenceMonth: month,
-      competenceYear: year,
+      OR: [
+        { competenceMonth: month, competenceYear: year },
+        { dueDate: { gte: startDate, lte: endDate } },
+      ],
     };
     if (companyId) invoiceWhere.companyId = companyId;
     if (serviceTypeId) invoiceWhere.serviceTypeId = serviceTypeId;
 
     const invoices = await prisma.invoice.findMany({
       where: invoiceWhere,
-      select: { totalValue: true, status: true, dueDate: true },
+      select: { totalValue: true, status: true, dueDate: true, contractId: true },
     });
 
     // Contratos ativos no mês
@@ -194,7 +199,7 @@ export class CalendarService {
 
     const contracts = await prisma.contract.findMany({
       where: contractWhere,
-      select: { monthlyValue: true },
+      select: { id: true, monthlyValue: true },
     });
 
     const totalEmitidas = invoices.length;
@@ -223,7 +228,9 @@ export class CalendarService {
       return i.status !== 'PAGA' && i.status !== 'REJEITADA' && due < now;
     }).length;
 
-    const contratosSemFatura = contracts.length - invoices.length;
+    // Contratos sem fatura: verifica por contractId
+    const contractIdsComFatura = new Set(invoices.map((i) => i.contractId));
+    const contratosSemFatura = contracts.filter((c) => !contractIdsComFatura.has(c.id)).length;
 
     return {
       totalEmitidas,

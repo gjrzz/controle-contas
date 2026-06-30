@@ -62,6 +62,7 @@ model ServiceType {
   companies Company[]
   contracts Contract[]
   invoices  Invoice[]
+  invoiceItems InvoiceItem[]
 
   @@map("service_types")
 }
@@ -103,10 +104,8 @@ model Contract {
   startDate       DateTime       @map("start_date") @db.Date
   endDate         DateTime       @map("end_date") @db.Date
   invoiceDueDay   Int            @map("invoice_due_day")
-  serviceCity     String         @map("service_city")
-  serviceState    String         @map("service_state")
   description     String?
-  filePath        String?        @map("file_path")
+  files           Json?          @default("[]")
   status          ContractStatus @default(ATIVO)
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -142,7 +141,7 @@ model Invoice {
   serviceState    String        @map("service_state")
   description     String?
   totalValue      Decimal       @map("total_value") @db.Decimal(12, 2)
-  filePath        String?       @map("file_path")
+  files           Json?         @default("[]")
   status          InvoiceStatus @default(PENDENTE)
   justification   String?
   rejectionReason String?       @map("rejection_reason")
@@ -160,16 +159,18 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String  @id @default(uuid())
-  invoiceId   String  @map("invoice_id")
-  description String
-  unitValue   Decimal @map("unit_value") @db.Decimal(12, 2)
-  quantity    Decimal @db.Decimal(10, 4)
-  totalValue  Decimal @map("total_value") @db.Decimal(12, 2)
-  serviceCity String? @map("service_city")
-  serviceState String? @map("service_state")
+  id            String  @id @default(uuid())
+  invoiceId     String  @map("invoice_id")
+  description   String
+  unitValue     Decimal @map("unit_value") @db.Decimal(12, 2)
+  quantity      Decimal @db.Decimal(10, 4)
+  totalValue    Decimal @map("total_value") @db.Decimal(12, 2)
+  serviceCity   String? @map("service_city")
+  serviceState  String? @map("service_state")
+  serviceTypeId String? @map("service_type_id")
 
-  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice     Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  serviceType ServiceType? @relation(fields: [serviceTypeId], references: [id])
 
   @@map("invoice_items")
 }

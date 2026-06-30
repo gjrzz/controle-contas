@@ -23,13 +23,11 @@ export function ContractForm({ contract, companies, serviceTypes, onClose, onSuc
     startDate: contract ? contract.startDate.split('T')[0] : '',
     endDate: contract ? contract.endDate.split('T')[0] : '',
     invoiceDueDay: contract?.invoiceDueDay?.toString() || '',
-    serviceCity: contract?.serviceCity || '',
-    serviceState: contract?.serviceState || '',
     description: contract?.description || '',
     status: contract?.status || 'ATIVO',
   });
 
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -60,11 +58,11 @@ export function ContractForm({ contract, companies, serviceTypes, onClose, onSuc
       formData.append('startDate', form.startDate);
       formData.append('endDate', form.endDate);
       formData.append('invoiceDueDay', form.invoiceDueDay);
-      formData.append('serviceCity', form.serviceCity);
-      formData.append('serviceState', form.serviceState);
       if (form.description) formData.append('description', form.description);
       if (isEditing) formData.append('status', form.status);
-      if (file) formData.append('file', file);
+      for (const f of files) {
+        formData.append('files', f);
+      }
 
       if (isEditing) {
         await api.put(`/contracts/${contract.id}`, formData, {
@@ -197,30 +195,7 @@ export function ContractForm({ contract, companies, serviceTypes, onClose, onSuc
             </div>
           </div>
 
-          {/* Praça de prestação */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cidade da Prestação *</label>
-              <input
-                type="text"
-                value={form.serviceCity}
-                onChange={(e) => handleChange('serviceCity', e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#57489c] focus:border-[#57489c] outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Estado *</label>
-              <input
-                type="text"
-                value={form.serviceState}
-                onChange={(e) => handleChange('serviceState', e.target.value.toUpperCase())}
-                required
-                maxLength={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#57489c] focus:border-[#57489c] outline-none"
-              />
-            </div>
-          </div>
+
 
           {/* Descrição */}
           <div>
@@ -239,16 +214,17 @@ export function ContractForm({ contract, companies, serviceTypes, onClose, onSuc
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors text-sm text-gray-700">
                 <Upload size={16} />
-                {file ? file.name : 'Selecionar arquivo'}
+                {files.length > 0 ? `${files.length} arquivo(s)` : 'Selecionar arquivos'}
                 <input
                   type="file"
                   accept="application/pdf"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={(e) => setFiles(Array.from(e.target.files || []))}
                   className="hidden"
                 />
               </label>
-              {contract?.filePath && !file && (
-                <span className="text-xs text-green-600">Arquivo já anexado</span>
+              {contract?.files && (contract.files as string[]).length > 0 && !files.length && (
+                <span className="text-xs text-green-600">{(contract.files as string[]).length} arquivo(s) anexado(s)</span>
               )}
             </div>
           </div>

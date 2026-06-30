@@ -52,4 +52,22 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+router.post('/change-password', authenticate, async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
+      newPassword: z.string().min(8, 'Nova senha deve ter pelo menos 8 caracteres'),
+    });
+    const { currentPassword, newPassword } = schema.parse(req.body);
+    await authService.changePassword(req.user!.userId, currentPassword, newPassword);
+    res.json({ message: 'Senha alterada com sucesso' });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: 'Dados inválidos', details: error.errors });
+      return;
+    }
+    res.status(400).json({ error: error.message || 'Erro ao alterar senha' });
+  }
+});
+
 export default router;

@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import path from 'path';
+import archiver from 'archiver';
+import fs from 'fs';
 import { InvoiceService } from '../services/invoice.service';
 import { AuditService } from '../services/audit.service';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
@@ -17,6 +19,7 @@ const invoiceItemSchema = z.object({
   quantity: z.coerce.number().positive('Quantidade deve ser positiva'),
   serviceCity: z.string().optional(),
   serviceState: z.string().max(2).optional(),
+  serviceTypeId: z.string().uuid().optional(),
 });
 
 const createInvoiceSchema = z.object({
@@ -135,22 +138,61 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Download do arquivo
-router.get('/:id/file', async (req: Request, res: Response) => {
+router.get('/:id/files', async (req: Request, res: Response) => {
   const invoice = await invoiceService.findById(req.params.id as string);
-  if (!invoice || !invoice.filePath) {
+  if (!invoice) {
+    res.status(404).json({ error: 'Fatura não encontrada' });
+    return;
+  }
+  res.json(invoice.files || []);
+});
+
+// Download de arquivo específico
+router.get('/:id/files/:filename', async (req: Request, res: Response) => {
+  const invoice = await invoiceService.findById(req.params.id as string);
+  const files = (invoice?.files as string[]) || [];
+  const filename = req.params.filename as string;
+  
+  if (!invoice || !files.includes(filename)) {
     res.status(404).json({ error: 'Arquivo não encontrado' });
     return;
   }
 
-  const filePath = path.resolve(uploadsPath, invoice.filePath);
-  res.download(filePath, `fatura-${invoice.invoiceNumber}.pdf`);
+  const filePath = path.resolve(uploadsPath, filename);
+  res.download(filePath, filename);
+});
+
+// Download de todos os arquivos em ZIP
+router.get('/:id/download-zip', async (req: Request, res: Response) => {
+  const invoice = await invoiceService.findById(req.params.id as string);
+  const files = (invoice?.files as string[]) || [];
+
+  if (!invoice || files.length === 0) {
+    res.status(404).json({ error: 'Nenhum arquivo encontrado' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename=fatura-${invoice.invoiceNumber}.zip`);
+
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  archive.pipe(res);
+
+  for (const filename of files) {
+    const filePath = path.resolve(uploadsPath, filename);
+    if (fs.existsSync(filePath)) {
+      archive.file(filePath, { name: filename });
+    }
+  }
+
+  archive.finalize();
 });
 
 // Cadastro — ADMIN e OPERADOR
-router.post('/', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async (req: Request, res: Response) => {
+router.post('/', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), async (req: Request, res: Response) => {
   try {
     const data = createInvoiceSchema.parse(req.body);
-    const filePath = req.file ? req.file.filename : undefined;
+    const files = (req.files as Express.Multer.File[] | undefined)?.map(f => f.filename) || [];
 
     // Validação de soma dos itens
     const itemsTotal = data.items.reduce((sum, item) => sum + Number((item.unitValue * item.quantity).toFixed(2)), 0);
@@ -180,7 +222,7 @@ router.post('/', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async (r
 
     const invoice = await invoiceService.create({
       ...data,
-      filePath,
+      files,
     });
 
     await auditService.log({
@@ -213,7 +255,7 @@ router.post('/', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async (r
 });
 
 // Edição — somente se PENDENTE, ADMIN e OPERADOR
-router.put('/:id', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async (req: Request, res: Response) => {
+router.put('/:id', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const existing = await invoiceService.findById(id);
@@ -228,7 +270,11 @@ router.put('/:id', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async 
     }
 
     const data = updateInvoiceSchema.parse(req.body);
-    const filePath = req.file ? req.file.filename : undefined;
+    const newFiles = (req.files as Express.Multer.File[] | undefined)?.map(f => f.filename) || [];
+
+    // Get existing files and append new ones
+    const existingFiles = (existing?.files as string[]) || [];
+    const allFiles = [...existingFiles, ...newFiles];
 
     // Validação de soma dos itens (se itens foram enviados)
     if (data.items && data.totalValue) {
@@ -242,7 +288,7 @@ router.put('/:id', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async 
       }
     }
 
-    const updateData = filePath ? { ...data, filePath } : data;
+    const updateData = { ...data, files: allFiles };
     const invoice = await invoiceService.update(id, updateData);
 
     await auditService.log({

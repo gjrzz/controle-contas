@@ -12,6 +12,7 @@ export interface InvoiceItem {
   totalValue: string | number;
   serviceCity?: string;
   serviceState?: string;
+  serviceTypeId?: string;
 }
 
 export interface Invoice {
@@ -28,7 +29,7 @@ export interface Invoice {
   serviceState: string;
   description: string | null;
   totalValue: string;
-  filePath: string | null;
+  files: string[] | null;
   status: InvoiceStatus;
   justification: string | null;
   rejectionReason: string | null;

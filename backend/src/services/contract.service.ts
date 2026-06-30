@@ -9,10 +9,8 @@ interface CreateContractInput {
   startDate: string;
   endDate: string;
   invoiceDueDay: number;
-  serviceCity: string;
-  serviceState: string;
   description?: string;
-  filePath?: string;
+  files?: string[];
 }
 
 interface UpdateContractInput {
@@ -22,10 +20,8 @@ interface UpdateContractInput {
   startDate?: string;
   endDate?: string;
   invoiceDueDay?: number;
-  serviceCity?: string;
-  serviceState?: string;
   description?: string;
-  filePath?: string;
+  files?: string[];
   status?: ContractStatus;
 }
 
@@ -47,10 +43,8 @@ export class ContractService {
         startDate: new Date(input.startDate),
         endDate: new Date(input.endDate),
         invoiceDueDay: input.invoiceDueDay,
-        serviceCity: input.serviceCity,
-        serviceState: input.serviceState,
         description: input.description,
-        filePath: input.filePath,
+        files: input.files || [],
       },
       include: { company: true, serviceType: true },
     });

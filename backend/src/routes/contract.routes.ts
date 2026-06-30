@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import path from 'path';
+import archiver from 'archiver';
+import fs from 'fs';
 import { ContractService } from '../services/contract.service';
 import { AuditService } from '../services/audit.service';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
@@ -19,8 +21,6 @@ const createContractSchema = z.object({
   startDate: z.string().min(1, 'Data de início obrigatória'),
   endDate: z.string().min(1, 'Data de vencimento obrigatória'),
   invoiceDueDay: z.coerce.number().int().min(1).max(31, 'Dia deve ser entre 1 e 31'),
-  serviceCity: z.string().min(2, 'Cidade obrigatória'),
-  serviceState: z.string().length(2, 'Estado deve ter 2 caracteres'),
   description: z.string().optional(),
 });
 
@@ -31,8 +31,6 @@ const updateContractSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   invoiceDueDay: z.coerce.number().int().min(1).max(31).optional(),
-  serviceCity: z.string().min(2).optional(),
-  serviceState: z.string().length(2).optional(),
   description: z.string().optional(),
   status: z.nativeEnum(ContractStatus).optional(),
 });
@@ -69,26 +67,65 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Download do arquivo
-router.get('/:id/file', async (req: Request, res: Response) => {
+router.get('/:id/files', async (req: Request, res: Response) => {
   const contract = await contractService.findById(req.params.id as string);
-  if (!contract || !contract.filePath) {
+  if (!contract) {
+    res.status(404).json({ error: 'Contrato não encontrado' });
+    return;
+  }
+  res.json(contract.files || []);
+});
+
+// Download de arquivo específico
+router.get('/:id/files/:filename', async (req: Request, res: Response) => {
+  const contract = await contractService.findById(req.params.id as string);
+  const files = (contract?.files as string[]) || [];
+  const filename = req.params.filename as string;
+  
+  if (!contract || !files.includes(filename)) {
     res.status(404).json({ error: 'Arquivo não encontrado' });
     return;
   }
 
-  const filePath = path.resolve(uploadsPath, contract.filePath);
-  res.download(filePath, `contrato-${contract.contractNumber}.pdf`);
+  const filePath = path.resolve(uploadsPath, filename);
+  res.download(filePath, filename);
+});
+
+// Download de todos os arquivos em ZIP
+router.get('/:id/download-zip', async (req: Request, res: Response) => {
+  const contract = await contractService.findById(req.params.id as string);
+  const files = (contract?.files as string[]) || [];
+
+  if (!contract || files.length === 0) {
+    res.status(404).json({ error: 'Nenhum arquivo encontrado' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename=contrato-${contract.contractNumber}.zip`);
+
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  archive.pipe(res);
+
+  for (const filename of files) {
+    const filePath = path.resolve(uploadsPath, filename);
+    if (fs.existsSync(filePath)) {
+      archive.file(filePath, { name: filename });
+    }
+  }
+
+  archive.finalize();
 });
 
 // Cadastro — ADMIN e OPERADOR
-router.post('/', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async (req: Request, res: Response) => {
+router.post('/', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), async (req: Request, res: Response) => {
   try {
     const data = createContractSchema.parse(req.body);
-    const filePath = req.file ? req.file.filename : undefined;
+    const files = (req.files as Express.Multer.File[] | undefined)?.map(f => f.filename) || [];
 
     const contract = await contractService.create({
       ...data,
-      filePath,
+      files,
     });
 
     await auditService.log({
@@ -114,13 +151,18 @@ router.post('/', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async (r
 });
 
 // Edição — ADMIN e OPERADOR
-router.put('/:id', authorize('ADMIN', 'OPERADOR'), upload.single('file'), async (req: Request, res: Response) => {
+router.put('/:id', authorize('ADMIN', 'OPERADOR'), upload.array('files', 10), async (req: Request, res: Response) => {
   try {
     const data = updateContractSchema.parse(req.body);
     const id = req.params.id as string;
-    const filePath = req.file ? req.file.filename : undefined;
+    const newFiles = (req.files as Express.Multer.File[] | undefined)?.map(f => f.filename) || [];
 
-    const updateData = filePath ? { ...data, filePath } : data;
+    // Get existing files and append new ones
+    const existing = await contractService.findById(id);
+    const existingFiles = (existing?.files as string[]) || [];
+    const allFiles = [...existingFiles, ...newFiles];
+
+    const updateData = { ...data, files: allFiles };
     const contract = await contractService.update(id, updateData);
 
     await auditService.log({

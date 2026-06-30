@@ -8,14 +8,12 @@ export interface Contract {
   companyId: string;
   serviceTypeId: string;
   contractNumber: string;
-  monthlyValue: string; // Decimal vem como string
+  monthlyValue: string;
   startDate: string;
   endDate: string;
   invoiceDueDay: number;
-  serviceCity: string;
-  serviceState: string;
   description: string | null;
-  filePath: string | null;
+  files: string[] | null;
   status: ContractStatus;
   createdAt: string;
   updatedAt: string;

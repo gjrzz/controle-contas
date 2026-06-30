@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import {
   Building2,
   FileText,
@@ -8,6 +9,7 @@ import {
   BarChart3,
   Users,
   LogOut,
+  KeyRound,
   Menu,
   X,
   CheckCircle,
@@ -71,6 +73,7 @@ export function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const filteredItems = navItems.filter(
     (item) => user && item.roles.includes(user.role)
@@ -82,6 +85,7 @@ export function Layout() {
   };
 
   return (
+    <>
     <div className="flex h-screen">
       {/* Sidebar */}
       <aside
@@ -154,6 +158,14 @@ export function Layout() {
               </p>
             </div>
             <button
+              onClick={() => setShowChangePassword(true)}
+              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              title="Alterar senha"
+              aria-label="Alterar senha"
+            >
+              <KeyRound size={18} />
+            </button>
+            <button
               onClick={handleLogout}
               className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               title="Sair"
@@ -170,5 +182,10 @@ export function Layout() {
         </main>
       </div>
     </div>
+
+    {showChangePassword && (
+      <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+    )}
+    </>
   );
 }
