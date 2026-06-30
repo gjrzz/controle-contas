@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Building2, Plus, Search, Edit, Power } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { CompanyForm } from '../components/CompanyForm';
 import { maskCNPJ, maskPhone } from '../utils/masks';
 import type { Company, CompanyStatus } from '../types/company';
@@ -9,6 +10,7 @@ import type { ServiceType } from '../types/company';
 
 export function Companies() {
   const { user } = useAuth();
+  const { success, error: showError } = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,9 +63,11 @@ export function Companies() {
   const handleToggleStatus = async (id: string) => {
     try {
       await api.patch(`/companies/${id}/toggle-status`);
+      success('Status alterado com sucesso');
       loadCompanies();
     } catch (err) {
       console.error('Erro ao alterar status:', err);
+      showError('Erro ao alterar status');
     }
   };
 
@@ -78,6 +82,7 @@ export function Companies() {
   };
 
   const handleFormSuccess = () => {
+    success(editingCompany ? 'Empresa atualizada' : 'Empresa cadastrada com sucesso');
     handleFormClose();
     loadCompanies();
   };

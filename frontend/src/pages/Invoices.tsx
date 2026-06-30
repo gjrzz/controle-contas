@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { CheckCircle, Plus, Edit, Download, History, AlertTriangle, Eye } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { InvoiceDetail } from '../components/InvoiceDetail';
 import { InvoiceHistory } from '../components/InvoiceHistory';
@@ -30,6 +31,7 @@ const statusColors: Record<InvoiceStatus, string> = {
 
 export function Invoices() {
   const { user } = useAuth();
+  const { success, error: showError } = useToast();
   const [searchParams] = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -110,7 +112,7 @@ export function Invoices() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert('Erro ao baixar arquivos');
+      showError('Erro ao baixar arquivos');
     }
   };
 
@@ -173,12 +175,14 @@ export function Invoices() {
   };
 
   const handleTransitionSuccess = () => {
+    success('Status da fatura atualizado');
     setTransitionInvoice(null);
     setTransitionAction(null);
     loadInvoices();
   };
 
   const handleFormSuccess = () => {
+    success('Fatura salva com sucesso');
     setShowForm(false);
     setEditingInvoice(null);
     loadInvoices();

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Users as UsersIcon, Plus, Edit, Power, KeyRound, Search } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { UserForm } from '../components/UserForm';
 import type { Role } from '../types/auth';
 
@@ -30,6 +31,7 @@ const roleColors: Record<Role, string> = {
 
 export function Users() {
   const { user: currentUser } = useAuth();
+  const { success, error: showError } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -71,9 +73,10 @@ export function Users() {
   const handleToggleStatus = async (userId: string) => {
     try {
       await api.patch(`/users/${userId}/toggle-status`);
+      success('Status do usuário alterado');
       loadUsers();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erro ao alterar status');
+      showError(err.response?.data?.error || 'Erro ao alterar status');
     }
   };
 
@@ -83,8 +86,9 @@ export function Users() {
     try {
       const { data } = await api.post(`/users/${userId}/reset-password`);
       setTempPassword({ userId, password: data.tempPassword });
+      success('Senha resetada com sucesso');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erro ao resetar senha');
+      showError(err.response?.data?.error || 'Erro ao resetar senha');
     }
   };
 
@@ -94,6 +98,7 @@ export function Users() {
   };
 
   const handleFormSuccess = () => {
+    success('Usuário salvo com sucesso');
     handleFormClose();
     loadUsers();
   };
