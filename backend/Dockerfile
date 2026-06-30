@@ -7,7 +7,7 @@ COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 
 # Instala todas as dependências (precisa de devDeps para build)
-RUN npm ci
+RUN npm install
 
 # Gera Prisma Client
 RUN npx prisma generate

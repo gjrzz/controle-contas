@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { X, Upload, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
+import { SERVICE_CITIES } from '../utils/constants';
 import type { Invoice, InvoiceItem, ValidationResult } from '../types/invoice';
 import type { Company, ServiceType } from '../types/company';
 import type { Contract } from '../types/contract';
@@ -40,11 +41,12 @@ export function InvoiceForm({ invoice, companies, serviceTypes, onClose, onSucce
       totalValue: Number(i.totalValue),
       serviceCity: i.serviceCity || '',
       serviceState: i.serviceState || '',
-    })) || [{ description: '', unitValue: 0, quantity: 1, totalValue: 0, serviceCity: '', serviceState: '' }]
+      serviceTypeId: i.serviceTypeId || '',
+    })) || [{ description: '', unitValue: 0, quantity: 1, totalValue: 0, serviceCity: '', serviceState: '', serviceTypeId: '' }]
   );
 
   const [contracts, setContracts] = useState<Contract[]>([]);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
@@ -61,7 +63,7 @@ export function InvoiceForm({ invoice, companies, serviceTypes, onClose, onSucce
       .catch(() => setContracts([]));
   }, [form.companyId]);
 
-  // Ao selecionar contrato, herda tipo de serviço e praça
+  // Ao selecionar contrato, herda tipo de serviço e descrição
   useEffect(() => {
     if (!form.contractId) return;
     const contract = contracts.find((c) => c.id === form.contractId);
@@ -69,8 +71,7 @@ export function InvoiceForm({ invoice, companies, serviceTypes, onClose, onSucce
       setForm((prev) => ({
         ...prev,
         serviceTypeId: contract.serviceTypeId,
-        serviceCity: prev.serviceCity || contract.serviceCity,
-        serviceState: prev.serviceState || contract.serviceState,
+        description: prev.description || contract.description || '',
       }));
     }
   }, [form.contractId, contracts]);
@@ -132,7 +133,7 @@ export function InvoiceForm({ invoice, companies, serviceTypes, onClose, onSucce
 
   // Items
   const addItem = () => {
-    setItems([...items, { description: '', unitValue: 0, quantity: 1, totalValue: 0, serviceCity: '', serviceState: '' }]);
+    setItems([...items, { description: '', unitValue: 0, quantity: 1, totalValue: 0, serviceCity: '', serviceState: '', serviceTypeId: '' }]);
   };
 
   const removeItem = (index: number) => {
@@ -187,7 +188,9 @@ export function InvoiceForm({ invoice, companies, serviceTypes, onClose, onSucce
       formData.append('items', JSON.stringify(items));
       if (form.description) formData.append('description', form.description);
       if (form.justification) formData.append('justification', form.justification);
-      if (file) formData.append('file', file);
+      for (const f of files) {
+        formData.append('files', f);
+      }
 
       if (isEditing) {
         await api.put(`/invoices/${invoice.id}`, formData, {
@@ -385,28 +388,22 @@ export function InvoiceForm({ invoice, companies, serviceTypes, onClose, onSucce
           </div>
 
           {/* Praça */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cidade Prestação *</label>
-              <input
-                type="text"
-                value={form.serviceCity}
-                onChange={(e) => handleChange('serviceCity', e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#57489c] focus:border-[#57489c] outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Estado *</label>
-              <input
-                type="text"
-                value={form.serviceState}
-                onChange={(e) => handleChange('serviceState', e.target.value.toUpperCase())}
-                required
-                maxLength={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#57489c] focus:border-[#57489c] outline-none"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Praça de Prestação *</label>
+            <select
+              value={form.serviceCity ? `${form.serviceCity}|${form.serviceState}` : ''}
+              onChange={(e) => {
+                const [city, state] = e.target.value.split('|');
+                setForm(prev => ({ ...prev, serviceCity: city || '', serviceState: state || '' }));
+              }}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#57489c] focus:border-[#57489c] outline-none"
+            >
+              <option value="">Selecione...</option>
+              {SERVICE_CITIES.map((c) => (
+                <option key={`${c.city}-${c.state}`} value={`${c.city}|${c.state}`}>{c.city}/{c.state}</option>
+              ))}
+            </select>
           </div>
 
           {/* Descrição */}
@@ -494,28 +491,37 @@ export function InvoiceForm({ invoice, companies, serviceTypes, onClose, onSucce
                       )}
                     </div>
                   </div>
-                  {/* Localidade do item */}
+                  {/* Localidade e Tipo do item */}
                   <div className="grid grid-cols-12 gap-2 items-end">
-                    <div className="col-span-5">
-                      <label className="block text-xs text-gray-400 mb-0.5">Cidade/Praça (opcional)</label>
-                      <input
-                        type="text"
-                        value={item.serviceCity || ''}
-                        onChange={(e) => updateItem(index, 'serviceCity', e.target.value)}
-                        placeholder="Cidade da prestação"
+                    <div className="col-span-4">
+                      <label className="block text-xs text-gray-400 mb-0.5">Praça (opcional)</label>
+                      <select
+                        value={item.serviceCity ? `${item.serviceCity}|${item.serviceState}` : ''}
+                        onChange={(e) => {
+                          const [city, state] = e.target.value.split('|');
+                          updateItem(index, 'serviceCity', city || '');
+                          updateItem(index, 'serviceState', state || '');
+                        }}
                         className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:ring-1 focus:ring-[#57489c] outline-none"
-                      />
+                      >
+                        <option value="">—</option>
+                        {SERVICE_CITIES.map((c) => (
+                          <option key={`${c.city}-${c.state}`} value={`${c.city}|${c.state}`}>{c.city}/{c.state}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div className="col-span-2">
-                      <label className="block text-xs text-gray-400 mb-0.5">UF</label>
-                      <input
-                        type="text"
-                        value={item.serviceState || ''}
-                        onChange={(e) => updateItem(index, 'serviceState', e.target.value.toUpperCase())}
-                        maxLength={2}
-                        placeholder="UF"
+                    <div className="col-span-3">
+                      <label className="block text-xs text-gray-400 mb-0.5">Tipo de Serviço</label>
+                      <select
+                        value={item.serviceTypeId || ''}
+                        onChange={(e) => updateItem(index, 'serviceTypeId', e.target.value)}
                         className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:ring-1 focus:ring-[#57489c] outline-none"
-                      />
+                      >
+                        <option value="">—</option>
+                        {serviceTypes.map((st) => (
+                          <option key={st.id} value={st.id}>{st.name}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="col-span-5"></div>
                   </div>
@@ -557,11 +563,12 @@ export function InvoiceForm({ invoice, companies, serviceTypes, onClose, onSucce
               <label className="block text-sm font-medium text-gray-700 mb-1">Upload NF (PDF)</label>
               <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors text-sm text-gray-700">
                 <Upload size={16} />
-                {file ? file.name : 'Selecionar arquivo'}
+                {files.length > 0 ? `${files.length} arquivo(s)` : 'Selecionar arquivos'}
                 <input
                   type="file"
                   accept="application/pdf"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={(e) => setFiles(Array.from(e.target.files || []))}
                   className="hidden"
                 />
               </label>

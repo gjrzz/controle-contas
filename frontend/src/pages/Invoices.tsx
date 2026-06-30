@@ -97,18 +97,20 @@ export function Invoices() {
   useEffect(() => { loadInvoices(); }, [loadInvoices]);
 
   const handleDownload = async (invoice: Invoice) => {
+    const files = (invoice.files as string[]) || [];
+    if (files.length === 0) return;
     try {
-      const response = await api.get(`/invoices/${invoice.id}/file`, { responseType: 'blob' });
+      const response = await api.get(`/invoices/${invoice.id}/download-zip`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `fatura-${invoice.invoiceNumber}.pdf`);
+      link.setAttribute('download', `fatura-${invoice.invoiceNumber}.zip`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert('Arquivo não encontrado');
+      alert('Erro ao baixar arquivos');
     }
   };
 
@@ -362,7 +364,7 @@ export function Invoices() {
                               <Edit size={15} />
                             </button>
                           )}
-                          {invoice.filePath && (
+                          {invoice.files && invoice.files.length > 0 && (
                             <button
                               onClick={() => handleDownload(invoice)}
                               className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"

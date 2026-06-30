@@ -80,19 +80,20 @@ export function Contracts() {
     loadContracts();
   };
 
-  const handleDownload = async (contractId: string) => {
+  const handleDownload = async (contractId: string, files: string[]) => {
+    if (files.length === 0) return;
     try {
-      const response = await api.get(`/contracts/${contractId}/file`, { responseType: 'blob' });
+      const response = await api.get(`/contracts/${contractId}/download-zip`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `contrato-${contractId}.pdf`);
+      link.setAttribute('download', `contrato-${contractId}.zip`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert('Arquivo não encontrado');
+      alert('Erro ao baixar arquivos');
     }
   };
 
@@ -260,9 +261,9 @@ export function Contracts() {
                             <Edit size={16} />
                           </button>
                         )}
-                        {contract.filePath && (
+                        {contract.files && (contract.files as string[]).length > 0 && (
                           <button
-                            onClick={() => handleDownload(contract.id)}
+                            onClick={() => handleDownload(contract.id, (contract.files as string[]) || [])}
                             className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             title="Download contrato"
                           >

@@ -1,8 +1,37 @@
+# Dependências
 node_modules/
+package-lock.json
+
+# Build
 dist/
+build/
+
+# Variáveis de ambiente e secrets
 .env
 .env.local
+.env.production
+*.pem
+*.key
+
+# Uploads (arquivos dos usuários)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Docker volumes e dados locais
+postgres_data/
+uploads_data/
+
+# Logs
 *.log
+
+# OS
 .DS_Store
-uploads/*
-!uploads/.gitkeep
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Deploy antigo
+deploy.ps1
+deploy.tar.gz

@@ -7,6 +7,7 @@ interface InvoiceItemInput {
   quantity: number;
   serviceCity?: string;
   serviceState?: string;
+  serviceTypeId?: string;
 }
 
 interface CreateInvoiceInput {
@@ -22,7 +23,7 @@ interface CreateInvoiceInput {
   serviceState: string;
   description?: string;
   totalValue: number;
-  filePath?: string;
+  files?: string[];
   justification?: string;
   items: InvoiceItemInput[];
 }
@@ -38,7 +39,7 @@ interface UpdateInvoiceInput {
   serviceState?: string;
   description?: string;
   totalValue?: number;
-  filePath?: string;
+  files?: string[];
   justification?: string;
   items?: InvoiceItemInput[];
 }
@@ -72,6 +73,7 @@ export class InvoiceService {
       totalValue: Number((item.unitValue * item.quantity).toFixed(2)),
       serviceCity: item.serviceCity || null,
       serviceState: item.serviceState || null,
+      serviceTypeId: item.serviceTypeId || null,
     }));
 
     return prisma.invoice.create({
@@ -88,7 +90,7 @@ export class InvoiceService {
         serviceState: input.serviceState,
         description: input.description,
         totalValue: input.totalValue,
-        filePath: input.filePath,
+        files: input.files || [],
         justification: input.justification,
         items: {
           create: itemsData,
@@ -180,6 +182,7 @@ export class InvoiceService {
           totalValue: Number((item.unitValue * item.quantity).toFixed(2)),
           serviceCity: item.serviceCity || null,
           serviceState: item.serviceState || null,
+          serviceTypeId: item.serviceTypeId || null,
         })),
       });
     }
