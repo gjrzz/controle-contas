@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { FileText, Plus, Edit, Download, AlertTriangle, History } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { ContractForm } from '../components/ContractForm';
 import { ContractHistory } from '../components/ContractHistory';
 import type { Contract, ContractStatus } from '../types/contract';
@@ -10,6 +11,7 @@ import type { Company, ServiceType } from '../types/company';
 
 export function Contracts() {
   const { user } = useAuth();
+  const { success, error: showError } = useToast();
   const [searchParams] = useSearchParams();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -76,6 +78,7 @@ export function Contracts() {
   };
 
   const handleFormSuccess = () => {
+    success('Contrato salvo com sucesso');
     handleFormClose();
     loadContracts();
   };
@@ -93,7 +96,7 @@ export function Contracts() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert('Erro ao baixar arquivos');
+      showError('Erro ao baixar arquivos');
     }
   };
 

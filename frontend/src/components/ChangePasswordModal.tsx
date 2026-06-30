@@ -1,17 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
 import api from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 
 interface ChangePasswordModalProps {
   onClose: () => void;
 }
 
 export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
+  const { success: toastSuccess } = useToast();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -31,29 +32,14 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
     setLoading(true);
     try {
       await api.post('/auth/change-password', { currentPassword, newPassword });
-      setSuccess(true);
+      toastSuccess('Senha alterada com sucesso');
+      onClose();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao alterar senha');
     } finally {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center">
-          <p className="text-green-700 font-medium mb-4">Senha alterada com sucesso!</p>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-[#57489c] hover:bg-[#57489c]/85 text-white font-medium rounded-lg transition-colors text-sm"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
