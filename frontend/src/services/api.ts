@@ -1,12 +1,13 @@
 import axios from 'axios';
-import type { LoginCredentials, TokenPair, User } from '../types/auth';
+import type { LoginCredentials, User } from '../types/auth';
 
 const api = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // Envia cookies automaticamente
 });
 
-// Interceptor para adicionar token
+// Interceptor para adicionar access token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
@@ -15,7 +16,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor para refresh automático
+// Interceptor para refresh automático via cookie
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -24,20 +25,14 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post<TokenPair>('/api/auth/refresh', { refreshToken });
-          localStorage.setItem('accessToken', data.accessToken);
-          localStorage.setItem('refreshToken', data.refreshToken);
-          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-          return api(originalRequest);
-        } catch {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
-        }
-      } else {
+      try {
+        // Refresh token é enviado automaticamente via httpOnly cookie
+        const { data } = await axios.post<{ accessToken: string }>('/api/auth/refresh', {}, { withCredentials: true });
+        localStorage.setItem('accessToken', data.accessToken);
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        return api(originalRequest);
+      } catch {
+        localStorage.removeItem('accessToken');
         window.location.href = '/login';
       }
     }
@@ -47,11 +42,12 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-  login: (credentials: LoginCredentials) =>
-    api.post<TokenPair>('/auth/login', credentials),
+  login: async (credentials: LoginCredentials) => {
+    const response = await api.post<{ accessToken: string }>('/auth/login', credentials);
+    return response;
+  },
   me: () => api.get<User>('/auth/me'),
-  refresh: (refreshToken: string) =>
-    api.post<TokenPair>('/auth/refresh', { refreshToken }),
+  logout: () => api.post('/auth/logout'),
 };
 
 export default api;

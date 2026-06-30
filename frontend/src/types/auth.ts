@@ -14,7 +14,6 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface TokenPair {
+export interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
 }

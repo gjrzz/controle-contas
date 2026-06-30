@@ -98,6 +98,13 @@ export class AuthService {
     return user;
   }
 
+  async getProfileByEmail(email: string) {
+    return prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+  }
+
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 

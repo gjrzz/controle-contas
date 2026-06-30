@@ -28,7 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data);
     } catch {
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       setUser(null);
     } finally {
       setLoading(false);
@@ -42,14 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: LoginCredentials) => {
     const { data } = await authApi.login(credentials);
     localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
     const { data: userData } = await authApi.me();
     setUser(userData);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Ignora erro no logout
+    }
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     setUser(null);
   };
 
